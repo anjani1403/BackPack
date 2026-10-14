@@ -55,22 +55,53 @@ Available Commands:
   list              List backups in storage backend
   help              Display this help message
 
+Supported Databases:
+  postgres, mysql
+
 Run 'backpack <command> --help' for details on a specific command.`)
+}
+
+func getAdapter(dbType, host string, port int, user, password, dbname string) (adapters.DatabaseAdapter, error) {
+	switch strings.ToLower(dbType) {
+	case "mysql":
+		if port == 5432 || port <= 0 {
+			port = 3306
+		}
+		return adapters.NewMySQLAdapter(host, port, user, password, dbname), nil
+	case "postgres", "postgresql", "pg":
+		if port == 3306 || port <= 0 {
+			port = 5432
+		}
+		return adapters.NewPostgresAdapter(host, port, user, password, dbname), nil
+	default:
+		return nil, fmt.Errorf("unsupported database type '%s'. Supported: postgres, mysql", dbType)
+	}
 }
 
 func runTestConnection(cfg *config.Config, args []string) {
 	fs := flag.NewFlagSet("test-connection", flag.ExitOnError)
+	dbType := fs.String("db", cfg.DBType, "Database type (postgres, mysql)")
 	host := fs.String("host", cfg.Host, "Database host")
-	port := fs.Int("port", cfg.Port, "Database port")
+	port := fs.Int("port", cfg.Port, "Database port (default: 3306 for MySQL, 5432 for Postgres)")
 	user := fs.String("user", cfg.User, "Database username")
 	password := fs.String("password", cfg.Password, "Database password")
 	dbname := fs.String("database", cfg.DBName, "Database name")
 	_ = fs.Parse(args)
 
 	logger.InitLogger(cfg.LogFormat, slog.LevelInfo)
-	slog.Info("Testing database connection", slog.String("host", *host), slog.Int("port", *port), slog.String("database", *dbname))
+	slog.Info("Testing database connection",
+		slog.String("db", *dbType),
+		slog.String("host", *host),
+		slog.Int("port", *port),
+		slog.String("database", *dbname),
+	)
 
-	adapter := adapters.NewPostgresAdapter(*host, *port, *user, *password, *dbname)
+	adapter, err := getAdapter(*dbType, *host, *port, *user, *password, *dbname)
+	if err != nil {
+		slog.Error("Configuration error", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+
 	if err := adapter.TestConnection(); err != nil {
 		slog.Error("Database connection test failed", slog.String("error", err.Error()))
 		os.Exit(1)
@@ -81,6 +112,7 @@ func runTestConnection(cfg *config.Config, args []string) {
 
 func runBackup(cfg *config.Config, args []string) {
 	fs := flag.NewFlagSet("backup", flag.ExitOnError)
+	dbType := fs.String("db", cfg.DBType, "Database type (postgres, mysql)")
 	host := fs.String("host", cfg.Host, "Database host")
 	port := fs.Int("port", cfg.Port, "Database port")
 	user := fs.String("user", cfg.User, "Database username")
@@ -93,7 +125,7 @@ func runBackup(cfg *config.Config, args []string) {
 	_ = fs.Parse(args)
 
 	logger.InitLogger(cfg.LogFormat, slog.LevelInfo)
-	logger.LogBackupStart("postgres", *dbname, *backupType)
+	logger.LogBackupStart(*dbType, *dbname, *backupType)
 
 	var tables []string
 	if *tablesFlag != "" {
@@ -107,7 +139,7 @@ func runBackup(cfg *config.Config, args []string) {
 	backupName := *customName
 	if backupName == "" {
 		timestamp := time.Now().Format("2006-01-02_150405")
-		backupName = fmt.Sprintf("%s_%s.dump.gz", *dbname, timestamp)
+		backupName = fmt.Sprintf("%s_%s.sql.gz", *dbname, timestamp)
 	}
 
 	store, err := storage.NewLocalStorage(*storagePath)
@@ -116,7 +148,12 @@ func runBackup(cfg *config.Config, args []string) {
 		os.Exit(1)
 	}
 
-	adapter := adapters.NewPostgresAdapter(*host, *port, *user, *password, *dbname)
+	adapter, err := getAdapter(*dbType, *host, *port, *user, *password, *dbname)
+	if err != nil {
+		slog.Error("Configuration error", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+
 	bp := pipeline.NewBackupPipeline(adapter, store)
 
 	result, err := bp.Execute(backupName, *backupType, tables)
@@ -130,6 +167,7 @@ func runBackup(cfg *config.Config, args []string) {
 
 func runRestore(cfg *config.Config, args []string) {
 	fs := flag.NewFlagSet("restore", flag.ExitOnError)
+	dbType := fs.String("db", cfg.DBType, "Database type (postgres, mysql)")
 	host := fs.String("host", cfg.Host, "Database host")
 	port := fs.Int("port", cfg.Port, "Database port")
 	user := fs.String("user", cfg.User, "Database username")
@@ -147,7 +185,11 @@ func runRestore(cfg *config.Config, args []string) {
 	}
 
 	logger.InitLogger(cfg.LogFormat, slog.LevelInfo)
-	slog.Info("Starting restore operation", slog.String("file", *file), slog.String("database", *dbname))
+	slog.Info("Starting restore operation",
+		slog.String("db", *dbType),
+		slog.String("file", *file),
+		slog.String("database", *dbname),
+	)
 
 	var tables []string
 	if *tablesFlag != "" {
@@ -164,7 +206,12 @@ func runRestore(cfg *config.Config, args []string) {
 		os.Exit(1)
 	}
 
-	adapter := adapters.NewPostgresAdapter(*host, *port, *user, *password, *dbname)
+	adapter, err := getAdapter(*dbType, *host, *port, *user, *password, *dbname)
+	if err != nil {
+		slog.Error("Configuration error", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+
 	rp := pipeline.NewRestorePipeline(adapter, store)
 
 	startTime := time.Now()
