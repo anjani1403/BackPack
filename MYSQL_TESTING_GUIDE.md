@@ -371,3 +371,4 @@ Mark each scenario as you execute tests on your local machine:
    On Windows, `localhost` may resolve to IPv6 `[::1]`. If your MySQL is configured for IPv4 only, always use `--host 127.0.0.1`.
 4. **Permanent `go` in PATH**:
    If `go` is not recognized, restart VS Code or press `Ctrl + Shift + P` -> `Reload Window` to refresh environment variables.
+
