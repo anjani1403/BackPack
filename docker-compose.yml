@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database for local testing
+  postgres:
+    image: postgres:15-alpine
+    container_name: backpack-postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: backpack_test
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  # MinIO for local S3-compatible storage testing
+  minio:
+    image: minio/minio
+    container_name: backpack-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: password123
+    ports:
+      - "9000:9000" # API port
+      - "9001:9001" # WebUI Console port
+    volumes:
+      - minio_data:/data
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  minio_data:

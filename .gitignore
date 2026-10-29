@@ -1,0 +1,24 @@
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+backpack
+
+# BackPack runtime generated backups
+backups/
+*.sql.gz
+*.dump
+*.dump.gz
+
+# Environment & Credentials
+.env
+*.local
+
+# IDE & OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

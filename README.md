@@ -2,7 +2,9 @@
 
 A cross-platform command-line tool to **back up and restore databases** (MySQL, PostgreSQL, MongoDB, SQLite) with compression, local or cloud storage, logging, and Slack notifications.
 
-> **Status:** 🚧 In development (planning and architecture phase)
+> **Status:** 🚧 In development (Phase 1 & MySQL integration testing)
+>
+> 📘 **MySQL Testing & Disaster Recovery Guide:** See [MYSQL_TESTING_GUIDE.md](file:///f:/open%20source%20projects/backpack/BackPack/MYSQL_TESTING_GUIDE.md) for hands-on crash simulation, failure recovery, and zero-lock concurrency tests.
 
 ---
 
