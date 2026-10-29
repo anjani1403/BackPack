@@ -121,6 +121,18 @@ func (m *MySQLAdapter) Backup(backupType string, tables []string) (io.ReadCloser
 
 // Restore executes the mysql client, reading the SQL stream from stdin.
 func (m *MySQLAdapter) Restore(stream io.Reader, tables []string) error {
+	// Ensure target database exists in case the entire database was accidentally dropped
+	createDBCmd := exec.Command(m.MySQLPath,
+		"-h", m.Host,
+		"-P", strconv.Itoa(m.Port),
+		"-u", m.User,
+		"-e", fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s`;", m.DBName),
+	)
+	if m.Password != "" {
+		createDBCmd.Env = append(os.Environ(), fmt.Sprintf("MYSQL_PWD=%s", m.Password))
+	}
+	_ = createDBCmd.Run()
+
 	args := []string{
 		"-h", m.Host,
 		"-P", strconv.Itoa(m.Port),

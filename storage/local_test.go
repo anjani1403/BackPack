@@ -41,9 +41,9 @@ func TestLocalStorageOperations(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Download failed: %v", err)
 	}
-	defer readCloser.Close()
 
 	downloadedBytes, err := io.ReadAll(readCloser)
+	_ = readCloser.Close()
 	if err != nil {
 		t.Fatalf("Reading downloaded stream failed: %v", err)
 	}
