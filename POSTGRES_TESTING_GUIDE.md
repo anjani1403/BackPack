@@ -333,3 +333,4 @@ Back up only `customers` and `orders`:
    On Windows, `localhost` may attempt IPv6 `[::1]`. If your PostgreSQL `pg_hba.conf` only listens on IPv4, always pass `--host 127.0.0.1`.
 4. **Binary Discovery**:
    BackPack automatically checks `C:\Program Files\PostgreSQL\17\bin` (and 16/15) if `pg_dump` or `pg_restore` are not in your system PATH.
+
