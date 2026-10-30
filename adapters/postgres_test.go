@@ -1,6 +1,7 @@
 package adapters_test
 
 import (
+	"strings"
 	"testing"
 
 	"backpack/adapters"
@@ -24,7 +25,7 @@ func TestPostgresAdapterInitialization(t *testing.T) {
 	if adapter.DBName != "mydb" {
 		t.Errorf("expected dbName mydb, got %s", adapter.DBName)
 	}
-	if adapter.PgDumpPath != "pg_dump" {
-		t.Errorf("expected default pg_dump path, got %s", adapter.PgDumpPath)
+	if !strings.HasSuffix(adapter.PgDumpPath, "pg_dump") && !strings.HasSuffix(adapter.PgDumpPath, "pg_dump.exe") {
+		t.Errorf("expected pg_dump path to resolve to pg_dump executable, got %s", adapter.PgDumpPath)
 	}
 }
